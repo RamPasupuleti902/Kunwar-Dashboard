@@ -56,16 +56,20 @@ const TRUST_SHEET_DATES = false;
  * Deploy > Manage deployments > Edit > Version: New version > Deploy.
  * ========================================================= */
 
+/*
+ * false = email restriction OFF: anyone who can open the web app
+ *         link sees the dashboard (ALLOWED_EMAILS is ignored).
+ * true  = only the emails in ALLOWED_EMAILS can open it.
+ */
+const RESTRICT_ACCESS = true;
+
 const ALLOWED_EMAILS = [
   'khichineeraj1@gmail.com',
   'kunwarsingh1920@gmail.com',
   'marketing5@clay.co.in',
-  'kumar.k@clay.co.in',
   'ram.p@clay.co.in',
-  'gauravd@clay.co.in',
-  'Support2.blr@clay.co.in',
-  'loky.k@airhubapp.com'
-  // add your own email here too if you want to open the dashboard
+  'kumar.k@clay.co.in'
+  // add more emails here, then redeploy a new version
 ];
 
 /*
@@ -139,6 +143,7 @@ function currentUserEmail_() {
 }
 
 function isAllowed_(email) {
+  if (!RESTRICT_ACCESS) return true;
   var target = normalizeEmail_(email);
   if (!target) return false;
   return ALLOWED_EMAILS
