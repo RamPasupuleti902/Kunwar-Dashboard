@@ -1,0 +1,2310 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Campaign & Sales Dashboard</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --green: #16a34a;
+      --red: #dc2626;
+      --shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container { max-width: 1500px; margin: 0 auto; }
+
+    h1 { margin: 0; font-size: 28px; }
+
+    #siteLabel { font-size: 16px; color: var(--muted); font-weight: 600; }
+
+    .subtitle { margin-top: 6px; color: var(--muted); font-size: 14px; }
+
+    .toolbar {
+      margin-top: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar label { font-size: 13px; font-weight: 600; color: var(--muted); }
+
+    select {
+      min-width: 160px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: 8px;
+      font-size: 14px;
+    }
+
+    /* ---------- SIGNED-IN USER ---------- */
+
+    .viewer {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .viewer strong { color: var(--text); }
+
+    /* ---------- KPI comparison table ---------- */
+
+    .compare-card {
+      margin-top: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .compare-card .table-wrapper { overflow-x: auto; }
+
+    table.kpi-compare {
+      min-width: 1100px;
+      border-collapse: collapse;
+    }
+
+    table.kpi-compare th,
+    table.kpi-compare td {
+      text-align: center;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    table.kpi-compare thead tr:first-child th {
+      background: #1f2937;
+      color: #fff;
+      font-size: 15px;
+      position: static;
+    }
+
+    table.kpi-compare thead tr:nth-child(2) th {
+      background: #f8fafc;
+      color: #374151;
+      font-size: 12px;
+      position: static;
+    }
+
+    table.kpi-compare td.value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    table.kpi-compare td.delta {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    table.kpi-compare .group-start {
+      border-left: 2px solid #1f2937;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .kpi-title { color: var(--muted); font-size: 13px; font-weight: 600; }
+
+    .kpi-value { margin-top: 8px; font-size: 27px; font-weight: 700; }
+
+    .kpi-comparison {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .kpi-month { color: var(--muted); font-size: 12px; }
+
+    .kpi-month strong {
+      display: block;
+      color: var(--text);
+      font-size: 15px;
+      margin-top: 3px;
+    }
+
+    .change { margin-top: 10px; font-size: 13px; font-weight: 700; }
+
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .neutral { color: var(--muted); }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .card.full { grid-column: 1 / -1; }
+
+    .card-title { font-size: 17px; font-weight: 700; margin-bottom: 15px; }
+
+    .chart { width: 100%; min-height: 360px; }
+
+    .table-wrapper { width: 100%; overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+
+    table.compare { min-width: 1700px; }
+
+    table.grouped th {
+      position: static;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    table.grouped th .sort-button { justify-content: center; }
+
+    table.grouped th.group-title {
+      background: #1f2937;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    table.grouped td { border-right: 1px solid var(--border); }
+
+    table.grouped .group-start { border-left: 2px solid #1f2937; }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #374151;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    td.number, th.number { text-align: right; }
+
+    tbody tr:hover { background: #f8fafc; }
+
+    .sort-button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 700;
+      color: inherit;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+    }
+
+    .sort-arrow { font-size: 12px; color: #9ca3af; min-width: 12px; }
+
+    .sort-arrow.active { color: var(--primary); font-weight: 900; }
+
+    .status {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-enabled, .status-active { background: #dcfce7; color: #166534; }
+
+    .status-paused, .status-disabled { background: #fee2e2; color: #991b1b; }
+
+    .status-unknown { background: #f3f4f6; color: #4b5563; }
+
+    .empty { padding: 30px; text-align: center; color: var(--muted); }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+
+    .hidden { display: none !important; }
+
+    .warning {
+      margin-top: 20px;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .table-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .filter-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-right: 8px;
+    }
+
+    table.origin-table td.group-cell {
+      vertical-align: top;
+      font-weight: 700;
+      background: #fcfcfd;
+      border-right: 1px solid var(--border);
+    }
+
+    table.origin-table tr.group-first td {
+      border-top: 2px solid #cbd5e1;
+    }
+
+    /* ---------- GEO-WISE ---------- */
+
+    .geo-controls {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .geo-controls input[type="text"] {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 14px;
+      min-width: 190px;
+    }
+
+    .geo-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .geo-kpis {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .geo-kpi {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .geo-kpi .t { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .geo-kpi .v { font-size: 20px; font-weight: 700; margin-top: 4px; }
+    .geo-kpi .c { font-size: 12px; font-weight: 700; margin-top: 4px; }
+
+    .roas-good { color: var(--green); font-weight: 700; }
+    .roas-bad  { color: var(--red); font-weight: 700; }
+
+    table.geo-table td:first-child { font-weight: 600; }
+
+    @media (max-width: 1100px) {
+      .geo-kpis { grid-template-columns: repeat(3, 1fr); }
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .section-grid { grid-template-columns: 1fr; }
+      .card.full { grid-column: auto; }
+    }
+
+    @media (max-width: 650px) {
+      body { padding: 12px; }
+      .kpis { grid-template-columns: 1fr; }
+      h1 { font-size: 23px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Campaign & Sales Dashboard <span id="siteLabel"></span></h1>
+
+  <div class="subtitle">
+    Campaign performance, sales, revenue and buyer-origin analysis.
+    ROS = Revenue ÷ Cost × 100
+    <span id="fxNote"></span>
+  </div>
+
+  <div class="viewer">Signed in as <strong><?= userEmail ?></strong></div>
+
+  <!-- FILTERS -->
+  <div class="toolbar">
+    <div>
+      <label for="siteSelect">Site</label><br>
+      <select id="siteSelect"></select>
+    </div>
+
+    <div>
+      <label for="monthA">Month</label><br>
+      <select id="monthA"></select>
+    </div>
+
+    <div class="checkbox-wrapper">
+      <input type="checkbox" id="compareToggle">
+      <label for="compareToggle">Compare months</label>
+    </div>
+
+    <div id="monthBWrapper" class="hidden">
+      <label for="monthB">Compare With</label><br>
+      <select id="monthB"></select>
+    </div>
+  </div>
+
+  <!-- MISSING CAMPAIGN REPORT WARNING -->
+  <div id="reportWarning" class="warning hidden"></div>
+
+  <!-- KPI -->
+  <div id="kpis" class="kpis"></div>
+
+  <!-- SINGLE MONTH -->
+  <div id="singleMonthCharts">
+    <div class="section-grid">
+      <div class="card">
+        <div class="card-title">Top 10 Buyer Origins by Sales</div>
+        <div id="buyerOriginChart" class="chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Top 5 Plans by Sales</div>
+        <div id="topPlansChart" class="chart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON -->
+  <div id="compareCharts" class="hidden">
+    <div class="section-grid">
+      <div class="card">
+        <div class="card-title">Top 10 Buyer Origins Comparison</div>
+        <div id="buyerOriginCompareChart" class="chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Top Plans Comparison</div>
+        <div id="plansCompareChart" class="chart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GEO-WISE PERFORMANCE -->
+  <div class="card full" style="margin-top:20px;">
+    <div class="card-head">
+      <div class="card-title" style="margin-bottom:0;">Geo-wise Performance</div>
+      <div class="geo-controls">
+        <label class="geo-check">
+          <input type="checkbox" id="geoCompare">
+          Geo-wise comparison
+        </label>
+        <input type="text" id="geoSearch" placeholder="Search country…" autocomplete="off">
+        <div>
+          <label for="geoLimit" class="filter-label">Show</label>
+          <select id="geoLimit" style="min-width:110px;">
+            <option value="15" selected>Top 15</option>
+            <option value="25">Top 25</option>
+            <option value="50">Top 50</option>
+            <option value="ALL">All</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="geoNote" class="warning hidden" style="margin-top:0;margin-bottom:15px;"></div>
+    <div id="geoKpis" class="geo-kpis"></div>
+    <div id="geoTable" class="table-wrapper"></div>
+  </div>
+
+  <!-- CAMPAIGN REPORT -->
+  <div class="card full" style="margin-top:20px;">
+    <div class="card-head">
+      <div class="card-title" style="margin-bottom:0;">Campaign Month-wise Performance</div>
+      <div>
+        <label for="campaignLimit" class="filter-label">Show</label>
+        <select id="campaignLimit" style="min-width:110px;">
+          <option value="10" selected>Top 10</option>
+          <option value="15">Top 15</option>
+          <option value="25">Top 25</option>
+          <option value="ALL">All</option>
+        </select>
+      </div>
+    </div>
+    <div id="campaignNote" class="warning hidden" style="margin-top:0;margin-bottom:15px;"></div>
+    <div id="campaignTable" class="table-wrapper"></div>
+  </div>
+
+  <!-- CAMPAIGN × BUYER ORIGIN -->
+  <div class="card full" style="margin-top:20px;">
+    <div class="card-head">
+      <div class="card-title" style="margin-bottom:0;">Campaign-wise Buyer Origin Sales</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+        <div>
+          <label for="originFilter" class="filter-label">Buyer Origin</label>
+          <select id="originFilter"></select>
+        </div>
+        <div>
+          <label for="originLimit" class="filter-label">Origins per campaign</label>
+          <select id="originLimit" style="min-width:110px;">
+            <option value="10" selected>Top 10</option>
+            <option value="15">Top 15</option>
+            <option value="25">Top 25</option>
+            <option value="ALL">All</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="campaignOriginTable" class="table-wrapper"></div>
+  </div>
+
+</div>
+
+
+<script>
+
+google.charts.load('current', { packages: ['corechart', 'bar'] });
+
+let DATA = null;
+
+
+/* =========================================================
+ * SORT STATE
+ * ========================================================= */
+
+let campaignSort = { key: 'sales', direction: 'desc' };
+
+const TEXT_SORT_KEYS = ['name', 'id', 'status'];
+
+
+/* =========================================================
+ * FORMATTERS
+ * ========================================================= */
+
+function fmtNum(value) {
+  const n = Number(value);
+  if (!isFinite(n)) return '0';
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+function fmtMoney(value) {
+  const n = Number(value);
+  if (!isFinite(n)) return '$0.00';
+  return '$' + n.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function fmtSignedNum(value) {
+  const n = Number(value);
+  if (!isFinite(n)) return '—';
+  const s = n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return n > 0 ? '+' + s : s;
+}
+
+function fmtPercent(value) {
+  if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+  return Number(value).toFixed(1) + '%';
+}
+
+function fmtSignedPercent(value) {
+  if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+  const n = Number(value);
+  return (n > 0 ? '+' : '') + n.toFixed(1) + '%';
+}
+
+function fmtSignedPts(value) {
+  if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+  const n = Number(value);
+  return (n > 0 ? '+' : '') + n.toFixed(1) + ' pts';
+}
+
+function signClass(value) {
+  if (value === null || value === undefined || !isFinite(Number(value))) return 'neutral';
+  if (value > 0) return 'positive';
+  if (value < 0) return 'negative';
+  return 'neutral';
+}
+
+
+/* =========================================================
+ * CALCULATIONS
+ * ========================================================= */
+
+function changePercent(current, previous) {
+
+  if (
+    current === null || current === undefined ||
+    previous === null || previous === undefined
+  ) return null;
+
+  current = Number(current);
+  previous = Number(previous);
+
+  if (!isFinite(current) || !isFinite(previous)) return null;
+
+  if (previous === 0) return current === 0 ? 0 : null;
+
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function calcRos(revenue, cost) {
+  revenue = Number(revenue || 0);
+  cost = Number(cost || 0);
+  if (!isFinite(revenue) || !isFinite(cost) || cost === 0) return null;
+  return (revenue / cost) * 100;
+}
+
+
+/* =========================================================
+ * MONTH HELPERS
+ * ========================================================= */
+
+function monthTotals(month) {
+
+  if (!DATA || !DATA.months || !DATA.months[month]) {
+    return { impressions: 0, cost: 0, sales: 0, revenue: 0, ros: null };
+  }
+
+  return DATA.months[month].totals;
+}
+
+function monthLabel(month) {
+  if (DATA && DATA.monthLabels && DATA.monthLabels[month]) {
+    return DATA.monthLabels[month];
+  }
+  return month;
+}
+
+
+/* =========================================================
+ * KPI
+ * ========================================================= */
+
+/*
+ * Comparison table:
+ *   Impressions | Sales | Revenue | Cost | ROS
+ *   Month A | Month B (compared) | Change   (for each)
+ */
+function renderKpiComparison(monthA, monthB) {
+
+  const a = monthTotals(monthA);
+  const b = monthTotals(monthB);
+
+  const metrics = [
+    { label: 'Impressions', a: a.impressions, b: b.impressions, fmt: fmtNum, type: 'pct' },
+    { label: 'Sales', a: a.sales, b: b.sales, fmt: fmtNum, type: 'pct' },
+    { label: 'Revenue', a: a.revenue, b: b.revenue, fmt: fmtMoney, type: 'pct' },
+    { label: 'Cost', a: a.cost, b: b.cost, fmt: fmtMoney, type: 'pct', lowerIsBetter: true },
+    { label: 'ROS', a: a.ros, b: b.ros, fmt: fmtPercent, type: 'pts' }
+  ];
+
+  const la = escapeHtml(monthLabel(monthA));
+  const lb = escapeHtml(monthLabel(monthB));
+
+  let head1 = '';
+  let head2 = '';
+  let body = '';
+
+  metrics.forEach(function(m) {
+
+    head1 += `<th colspan="3" class="group-start">${m.label}</th>`;
+
+    head2 += `
+      <th class="group-start">${la}</th>
+      <th>${lb} (Compared)</th>
+      <th>Change</th>
+    `;
+
+    let delta = null;
+    let deltaText = '—';
+
+    if (m.type === 'pts') {
+      if (
+        m.a !== null && m.a !== undefined && isFinite(Number(m.a)) &&
+        m.b !== null && m.b !== undefined && isFinite(Number(m.b))
+      ) {
+        delta = Number(m.b) - Number(m.a);
+        deltaText = fmtSignedPts(delta);
+      }
+    } else {
+      delta = changePercent(m.b, m.a);
+      deltaText = delta === null ? 'N/A' : fmtSignedPercent(delta);
+    }
+
+    let cls = 'neutral';
+
+    if (delta !== null && delta !== 0) {
+      const good = m.lowerIsBetter ? delta < 0 : delta > 0;
+      cls = good ? 'positive' : 'negative';
+    }
+
+    body += `
+      <td class="value group-start">${m.fmt(m.a)}</td>
+      <td class="value">${m.fmt(m.b)}</td>
+      <td class="delta ${cls}">${deltaText}</td>
+    `;
+  });
+
+  const el = document.getElementById('kpis');
+
+  el.className = 'compare-card';
+
+  el.innerHTML = `
+    <div class="card-title">${la} vs ${lb}</div>
+    <div class="table-wrapper">
+      <table class="kpi-compare">
+        <thead>
+          <tr>${head1}</tr>
+          <tr>${head2}</tr>
+        </thead>
+        <tbody>
+          <tr>${body}</tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+
+function renderKpis(monthA, monthB) {
+
+  if (monthB) {
+    renderKpiComparison(monthA, monthB);
+    return;
+  }
+
+  document.getElementById('kpis').className = 'kpis';
+
+
+  const a = monthTotals(monthA);
+  const comparing = !!monthB;
+  const b = comparing ? monthTotals(monthB) : null;
+
+  const cards = [
+    { label: 'Impressions', a: a.impressions, b: b ? b.impressions : null, fmt: fmtNum },
+    { label: 'Cost', a: a.cost, b: b ? b.cost : null, fmt: fmtMoney },
+    { label: 'Sales', a: a.sales, b: b ? b.sales : null, fmt: fmtNum },
+    { label: 'Revenue', a: a.revenue, b: b ? b.revenue : null, fmt: fmtMoney },
+    { label: 'ROS', a: a.ros, b: b ? b.ros : null, fmt: fmtPercent }
+  ];
+
+  let html = '';
+
+  cards.forEach(function(card) {
+
+    if (!comparing) {
+      html += `
+        <div class="kpi">
+          <div class="kpi-title">${card.label}</div>
+          <div class="kpi-value">${card.fmt(card.a)}</div>
+        </div>
+      `;
+      return;
+    }
+
+    const pct = changePercent(card.b, card.a);
+
+    const changeHtml = pct === null
+      ? `<div class="change neutral">N/A</div>`
+      : `<div class="change ${signClass(pct)}">${fmtSignedPercent(pct)} change</div>`;
+
+    html += `
+      <div class="kpi">
+        <div class="kpi-title">${card.label}</div>
+        <div class="kpi-comparison">
+          <div class="kpi-month">
+            ${monthLabel(monthA)}
+            <strong>${card.fmt(card.a)}</strong>
+          </div>
+          <div class="kpi-month">
+            ${monthLabel(monthB)}
+            <strong>${card.fmt(card.b)}</strong>
+          </div>
+        </div>
+        ${changeHtml}
+      </div>
+    `;
+  });
+
+  document.getElementById('kpis').innerHTML = html;
+}
+
+
+/* =========================================================
+ * GENERIC TOP-N HELPERS
+ * ========================================================= */
+
+function getTopEntries(month, field, limit) {
+
+  const obj =
+    DATA.months[month] && DATA.months[month][field]
+      ? DATA.months[month][field]
+      : {};
+
+  return Object.keys(obj)
+    .map(function(name) {
+      return {
+        name: name || 'Unknown',
+        sales: Number(obj[name].sales || 0)
+      };
+    })
+    .sort(function(a, b) { return b.sales - a.sales; })
+    .slice(0, limit);
+}
+
+function mergeTop(aRows, bRows, limit) {
+
+  const map = {};
+
+  aRows.forEach(function(row) {
+    map[row.name] = { a: row.sales, b: 0 };
+  });
+
+  bRows.forEach(function(row) {
+    if (!map[row.name]) map[row.name] = { a: 0, b: row.sales };
+    else map[row.name].b = row.sales;
+  });
+
+  return Object.keys(map)
+    .map(function(name) {
+      return {
+        name: name,
+        a: map[name].a,
+        b: map[name].b,
+        total: map[name].a + map[name].b
+      };
+    })
+    .sort(function(a, b) { return b.total - a.total; })
+    .slice(0, limit);
+}
+
+
+/* =========================================================
+ * BUYER ORIGIN
+ * ========================================================= */
+
+function drawBuyerOrigin(month) {
+
+  const el = document.getElementById('buyerOriginChart');
+  const rows = getTopEntries(month, 'region', 10);
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">No buyer-origin data available.</div>';
+    return;
+  }
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Buyer Origin');
+  data.addColumn('number', 'Sales');
+  rows.forEach(function(row) { data.addRow([row.name, row.sales]); });
+
+  new google.visualization.BarChart(el).draw(data, {
+    legend: { position: 'none' },
+    bars: 'horizontal',
+    height: Math.max(360, rows.length * 34),
+    chartArea: { left: 150, right: 30, top: 15, bottom: 30, width: '100%', height: '90%' },
+    hAxis: { minValue: 0 }
+  });
+}
+
+function drawBuyerOriginComparison(monthA, monthB) {
+
+  const el = document.getElementById('buyerOriginCompareChart');
+
+  const rows = mergeTop(
+    getTopEntries(monthA, 'region', 10),
+    getTopEntries(monthB, 'region', 10),
+    10
+  );
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">No buyer-origin data available.</div>';
+    return;
+  }
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Buyer Origin');
+  data.addColumn('number', monthLabel(monthA));
+  data.addColumn('number', monthLabel(monthB));
+  rows.forEach(function(row) { data.addRow([row.name, row.a, row.b]); });
+
+  new google.visualization.BarChart(el).draw(data, {
+    bars: 'horizontal',
+    height: Math.max(380, rows.length * 38),
+    chartArea: { left: 150, right: 30, top: 15, bottom: 40, width: '100%', height: '90%' },
+    hAxis: { minValue: 0 }
+  });
+}
+
+
+/* =========================================================
+ * PLANS
+ * ========================================================= */
+
+function drawTopPlans(month) {
+
+  const el = document.getElementById('topPlansChart');
+  const rows = getTopEntries(month, 'plans', 5);
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">No plan data available.</div>';
+    return;
+  }
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Plan');
+  data.addColumn('number', 'Sales');
+  rows.forEach(function(row) { data.addRow([row.name, row.sales]); });
+
+  new google.visualization.ColumnChart(el).draw(data, {
+    legend: { position: 'none' },
+    height: 360,
+    chartArea: { left: 60, right: 20, top: 20, bottom: 100, width: '90%', height: '70%' },
+    hAxis: { slantedText: true, slantedTextAngle: 40 },
+    vAxis: { minValue: 0 }
+  });
+}
+
+function drawPlansComparison(monthA, monthB) {
+
+  const el = document.getElementById('plansCompareChart');
+
+  const rows = mergeTop(
+    getTopEntries(monthA, 'plans', 5),
+    getTopEntries(monthB, 'plans', 5),
+    5
+  );
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">No plan data available.</div>';
+    return;
+  }
+
+  const data = new google.visualization.DataTable();
+  data.addColumn('string', 'Plan');
+  data.addColumn('number', monthLabel(monthA));
+  data.addColumn('number', monthLabel(monthB));
+  rows.forEach(function(row) { data.addRow([row.name, row.a, row.b]); });
+
+  new google.visualization.ColumnChart(el).draw(data, {
+    height: 360,
+    chartArea: { left: 60, right: 20, top: 20, bottom: 100, width: '90%', height: '70%' },
+    hAxis: { slantedText: true, slantedTextAngle: 40 },
+    vAxis: { minValue: 0 }
+  });
+}
+
+
+/* =========================================================
+ * CAMPAIGN HELPERS
+ * ========================================================= */
+
+function getCampaigns(month) {
+  if (!DATA || !DATA.months || !DATA.months[month]) return [];
+  return DATA.months[month].campaigns || [];
+}
+
+function escapeHtml(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function statusHtml(status) {
+
+  const value = String(status || 'Unknown').trim();
+  const lower = value.toLowerCase();
+
+  let cls = 'status-unknown';
+
+  if (lower === 'enabled' || lower === 'active' || lower === 'eligible') {
+    cls = 'status-enabled';
+  } else if (lower === 'paused' || lower === 'disabled') {
+    cls = 'status-disabled';
+  }
+
+  return `<span class="status ${cls}">${escapeHtml(value)}</span>`;
+}
+
+
+/* =========================================================
+ * CAMPAIGN SORT
+ * ========================================================= */
+
+function getCampaignSortValue(row, key) {
+
+  const value = row[key];
+
+  if (TEXT_SORT_KEYS.indexOf(key) !== -1) {
+    return String(value || '').toLowerCase();
+  }
+
+  /*
+   * Null ROS / % values always sort to the bottom
+   * in descending order.
+   */
+  if (value === null || value === undefined || !isFinite(Number(value))) {
+    return -Infinity;
+  }
+
+  return Number(value);
+}
+
+function sortCampaignRows(rows, key, direction) {
+
+  return rows.slice().sort(function(a, b) {
+
+    const x = getCampaignSortValue(a, key);
+    const y = getCampaignSortValue(b, key);
+
+    let result;
+
+    if (typeof x === 'string') {
+      result = x.localeCompare(y);
+    } else if (x === y) {
+      result = 0;
+    } else {
+      result = x < y ? -1 : 1;
+    }
+
+    return direction === 'asc' ? result : -result;
+  });
+}
+
+function sortArrow(key) {
+
+  if (campaignSort.key !== key) {
+    return `<span class="sort-arrow">↕</span>`;
+  }
+
+  return campaignSort.direction === 'asc'
+    ? `<span class="sort-arrow active">↑</span>`
+    : `<span class="sort-arrow active">↓</span>`;
+}
+
+function sortableHeader(label, key, numeric) {
+
+  return `
+    <th class="${numeric ? 'number' : ''}">
+      <button
+        class="sort-button"
+        onclick="sortCampaign('${key}')"
+        title="Sort by ${escapeHtml(label)}"
+      >
+        <span>${escapeHtml(label)}</span>
+        ${sortArrow(key)}
+      </button>
+    </th>
+  `;
+}
+
+function sortCampaign(key) {
+
+  if (campaignSort.key === key) {
+    campaignSort.direction =
+      campaignSort.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    campaignSort.key = key;
+    campaignSort.direction =
+      TEXT_SORT_KEYS.indexOf(key) !== -1 ? 'asc' : 'desc';
+  }
+
+  const comparing = document.getElementById('compareToggle').checked;
+
+  renderCampaignTable(
+    document.getElementById('monthA').value,
+    comparing ? document.getElementById('monthB').value : null
+  );
+}
+
+
+/* =========================================================
+ * ROW LIMIT (Top 10 / 15 / 25 / All)
+ * ========================================================= */
+
+function getLimit(selectId) {
+  const v = document.getElementById(selectId).value;
+  return v === 'ALL' ? Infinity : Number(v);
+}
+
+function limitNote(shown, total, unit) {
+  if (shown >= total) {
+    return `<div class="table-note">Showing all ${fmtNum(total)} ${unit}.</div>`;
+  }
+  return `<div class="table-note">Showing top ${fmtNum(shown)} of ${fmtNum(total)} ${unit}. Change "Show" to see more.</div>`;
+}
+
+/*
+ * Keeps the top N origin rows for EACH campaign
+ * (origins are already sorted by sales, highest first).
+ */
+function limitGroups(groups, limit) {
+  return groups.map(function(g) {
+    return Object.assign({}, g, { origins: g.origins.slice(0, limit) });
+  });
+}
+
+function originLimitNote(groups, allGroups) {
+
+  const limit = getLimit('originLimit');
+  const shown = countOriginRows(groups);
+  const total = countOriginRows(allGroups);
+
+  if (shown >= total) {
+    return `<div class="table-note">Showing all buyer origins for ${fmtNum(groups.length)} campaigns.</div>`;
+  }
+
+  return `<div class="table-note">Showing top ${fmtNum(limit)} buyer origins per campaign ` +
+    `(${fmtNum(shown)} of ${fmtNum(total)} rows, ${fmtNum(groups.length)} campaigns). Change "Show" to see more.</div>`;
+}
+
+function countOriginRows(groups) {
+  return groups.reduce(function(s, g) { return s + g.origins.length; }, 0);
+}
+
+
+/* =========================================================
+ * CAMPAIGN TABLE
+ * ========================================================= */
+
+function renderCampaignTable(monthA, monthB) {
+
+  const container = document.getElementById('campaignTable');
+  const comparing = !!monthB;
+  const rowsA = getCampaigns(monthA);
+
+
+  /* ---------------- SINGLE MONTH ---------------- */
+
+  if (!comparing) {
+
+    const rows = rowsA.map(function(row) {
+
+      const cost = Number(row.cost || 0);
+      const revenue = Number(row.revenue || 0);
+
+      return {
+        name: row.name || 'Unknown',
+        id: row.id || '',
+        status: row.status || 'Unknown',
+        impressions: Number(row.impressions || 0),
+        cost: cost,
+        sales: Number(row.sales || 0),
+        revenue: revenue,
+        ros: calcRos(revenue, cost)
+      };
+    });
+
+    const sortedRows =
+      sortCampaignRows(rows, campaignSort.key, campaignSort.direction);
+
+    if (!sortedRows.length) {
+      container.innerHTML =
+        '<div class="empty">No campaign data available for this month.</div>';
+      return;
+    }
+
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            ${sortableHeader('Campaign', 'name', false)}
+            ${sortableHeader('Campaign ID', 'id', false)}
+            ${sortableHeader('Status', 'status', false)}
+            ${sortableHeader('Impressions', 'impressions', true)}
+            ${sortableHeader('Cost', 'cost', true)}
+            ${sortableHeader('Sales', 'sales', true)}
+            ${sortableHeader('Revenue', 'revenue', true)}
+            ${sortableHeader('ROS', 'ros', true)}
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    const shownRows = sortedRows.slice(0, getLimit('campaignLimit'));
+
+    shownRows.forEach(function(row) {
+      html += `
+        <tr>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${escapeHtml(row.id)}</td>
+          <td>${statusHtml(row.status)}</td>
+          <td class="number">${fmtNum(row.impressions)}</td>
+          <td class="number">${fmtMoney(row.cost)}</td>
+          <td class="number">${fmtNum(row.sales)}</td>
+          <td class="number">${fmtMoney(row.revenue)}</td>
+          <td class="number">${fmtPercent(row.ros)}</td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    html += limitNote(shownRows.length, sortedRows.length, 'campaigns');
+
+    container.innerHTML = html;
+    return;
+  }
+
+
+  /* ---------------- COMPARISON ---------------- */
+
+  const rowsB = getCampaigns(monthB);
+
+  const mapA = {};
+  const mapB = {};
+
+  rowsA.forEach(function(row) {
+    mapA[String(row.id || row.name || '').trim()] = row;
+  });
+
+  rowsB.forEach(function(row) {
+    mapB[String(row.id || row.name || '').trim()] = row;
+  });
+
+  const keys = Array.from(
+    new Set(Object.keys(mapA).concat(Object.keys(mapB)))
+  );
+
+  const rows = keys.map(function(key) {
+
+    const a = mapA[key] || {};
+    const b = mapB[key] || {};
+
+    const r = {
+      name: b.name || a.name || 'Unknown',
+      id: b.id || a.id || '',
+      status: b.status || a.status || 'Unknown',
+
+      aImpressions: Number(a.impressions || 0),
+      bImpressions: Number(b.impressions || 0),
+
+      aCost: Number(a.cost || 0),
+      bCost: Number(b.cost || 0),
+
+      aSales: Number(a.sales || 0),
+      bSales: Number(b.sales || 0),
+
+      aRevenue: Number(a.revenue || 0),
+      bRevenue: Number(b.revenue || 0)
+    };
+
+    r.aRos = calcRos(r.aRevenue, r.aCost);
+    r.bRos = calcRos(r.bRevenue, r.bCost);
+
+    r.impressionsChange = changePercent(r.bImpressions, r.aImpressions);
+    r.costChange = changePercent(r.bCost, r.aCost);
+    r.salesChange = changePercent(r.bSales, r.aSales);
+    r.revenueChange = changePercent(r.bRevenue, r.aRevenue);
+    r.rosChange =
+      r.aRos !== null && r.bRos !== null ? r.bRos - r.aRos : null;
+
+    return r;
+  });
+
+  const sortedRows =
+    sortCampaignRows(rows, campaignSort.key, campaignSort.direction);
+
+  if (!sortedRows.length) {
+    container.innerHTML =
+      '<div class="empty">No campaign comparison data available.</div>';
+    return;
+  }
+
+  const la = monthLabel(monthA);
+  const lb = monthLabel(monthB) + ' (Compared)';
+
+  /*
+   * Metric groups: Month A | Month B (Compared) | Change
+   */
+  const groups = [
+    { label: 'Impressions', a: 'aImpressions', b: 'bImpressions', c: 'impressionsChange', fmt: fmtNum, type: 'pct' },
+    { label: 'Cost', a: 'aCost', b: 'bCost', c: 'costChange', fmt: fmtMoney, type: 'pct', lowerIsBetter: true },
+    { label: 'Sales', a: 'aSales', b: 'bSales', c: 'salesChange', fmt: fmtNum, type: 'pct' },
+    { label: 'Revenue', a: 'aRevenue', b: 'bRevenue', c: 'revenueChange', fmt: fmtMoney, type: 'pct' },
+    { label: 'ROS', a: 'aRos', b: 'bRos', c: 'rosChange', fmt: fmtPercent, type: 'pts' }
+  ];
+
+  function groupedHeader(label, key, numeric, extraClass) {
+    return sortableHeader(label, key, numeric)
+      .replace('<th class="', '<th class="' + (extraClass || '') + ' ');
+  }
+
+  let head1 = `
+    <th rowspan="2">Campaign</th>
+    <th rowspan="2">Campaign ID</th>
+    <th rowspan="2">Status</th>
+  `;
+
+  let head2 = '';
+
+  groups.forEach(function(g) {
+
+    head1 += `<th colspan="3" class="group-title group-start">${g.label}</th>`;
+
+    head2 +=
+      groupedHeader(la, g.a, true, 'group-start') +
+      groupedHeader(lb, g.b, true, '') +
+      groupedHeader('Change', g.c, true, '');
+  });
+
+  /*
+   * Sort buttons for the first 3 columns live in row 1.
+   */
+  head1 = head1
+    .replace('<th rowspan="2">Campaign</th>', sortableHeader('Campaign', 'name', false).replace('<th ', '<th rowspan="2" '))
+    .replace('<th rowspan="2">Campaign ID</th>', sortableHeader('Campaign ID', 'id', false).replace('<th ', '<th rowspan="2" '))
+    .replace('<th rowspan="2">Status</th>', sortableHeader('Status', 'status', false).replace('<th ', '<th rowspan="2" '));
+
+  let html = `
+    <table class="compare grouped">
+      <thead>
+        <tr>${head1}</tr>
+        <tr>${head2}</tr>
+      </thead>
+      <tbody>
+  `;
+
+  const shownRows = sortedRows.slice(0, getLimit('campaignLimit'));
+
+  shownRows.forEach(function(row) {
+
+    html += `
+      <tr>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${escapeHtml(row.id)}</td>
+        <td>${statusHtml(row.status)}</td>
+    `;
+
+    groups.forEach(function(g) {
+
+      const delta = row[g.c];
+
+      let cls = 'neutral';
+
+      if (delta !== null && delta !== undefined && delta !== 0) {
+        const good = g.lowerIsBetter ? delta < 0 : delta > 0;
+        cls = good ? 'positive' : 'negative';
+      }
+
+      const deltaText = g.type === 'pts'
+        ? fmtSignedPts(delta)
+        : (delta === null ? 'N/A' : fmtSignedPercent(delta));
+
+      html += `
+        <td class="number group-start">${g.fmt(row[g.a])}</td>
+        <td class="number">${g.fmt(row[g.b])}</td>
+        <td class="number ${cls}"><strong>${deltaText}</strong></td>
+      `;
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  html += limitNote(shownRows.length, sortedRows.length, 'campaigns');
+
+  container.innerHTML = html;
+}
+
+
+/* =========================================================
+ * CAMPAIGN × BUYER ORIGIN
+ * ========================================================= */
+
+function getCampaignOrigins(month) {
+  if (!DATA || !DATA.months || !DATA.months[month]) return [];
+  return DATA.months[month].campaignOrigins || [];
+}
+
+function campaignKeyOf(c) {
+  return String(c.id || c.key || c.name || '').trim();
+}
+
+/*
+ * Fill the Buyer Origin dropdown with origins from the
+ * selected month(s), keeping the current choice if possible.
+ */
+function populateOriginFilter(monthA, monthB) {
+
+  const sel = document.getElementById('originFilter');
+  const current = sel.value || 'ALL';
+  const totals = {};
+
+  [monthA, monthB].forEach(function(m) {
+    if (!m) return;
+    getCampaignOrigins(m).forEach(function(c) {
+      c.origins.forEach(function(o) {
+        totals[o.origin] = (totals[o.origin] || 0) + o.sales;
+      });
+    });
+  });
+
+  const origins = Object.keys(totals).sort(function(a, b) {
+    return totals[b] - totals[a];
+  });
+
+  sel.innerHTML =
+    '<option value="ALL">All origins</option>' +
+    origins.map(function(o) {
+      return `<option value="${escapeHtml(o)}">${escapeHtml(o)} (${fmtNum(totals[o])})</option>`;
+    }).join('');
+
+  sel.value = origins.indexOf(current) !== -1 ? current : 'ALL';
+}
+
+function renderCampaignOrigin(monthA, monthB) {
+
+  const container = document.getElementById('campaignOriginTable');
+  const filter = document.getElementById('originFilter').value || 'ALL';
+  const comparing = !!monthB;
+
+  function keep(origin) {
+    return filter === 'ALL' || origin === filter;
+  }
+
+  /* ---------------- SINGLE MONTH ---------------- */
+
+  if (!comparing) {
+
+    const allGroups = getCampaignOrigins(monthA)
+      .map(function(c) {
+        const origins = c.origins
+          .filter(function(o) { return keep(o.origin); })
+          .sort(function(a, b) { return b.sales - a.sales || b.revenue - a.revenue; });
+        return {
+          id: c.id,
+          name: c.name,
+          origins: origins,
+          sales: origins.reduce(function(s, o) { return s + o.sales; }, 0),
+          revenue: origins.reduce(function(s, o) { return s + o.revenue; }, 0)
+        };
+      })
+      .filter(function(g) { return g.origins.length; })
+      .sort(function(a, b) { return b.sales - a.sales; });
+
+    const groups = limitGroups(allGroups, getLimit('originLimit'));
+
+    if (!groups.length) {
+      container.innerHTML =
+        '<div class="empty">No sales for this month' +
+        (filter === 'ALL' ? '' : ' from ' + escapeHtml(filter)) + '.</div>';
+      return;
+    }
+
+    let html = `
+      <table class="origin-table">
+        <thead>
+          <tr>
+            <th>Campaign ID</th>
+            <th>Campaign</th>
+            <th class="number">Campaign Sales</th>
+            <th>Buyer Origin</th>
+            <th class="number">Sales</th>
+            <th class="number">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    groups.forEach(function(g) {
+
+      g.origins.forEach(function(o, i) {
+
+        html += `<tr class="${i === 0 ? 'group-first' : ''}">`;
+
+        if (i === 0) {
+          const span = g.origins.length;
+          html += `
+            <td class="group-cell" rowspan="${span}">${escapeHtml(g.id || '—')}</td>
+            <td class="group-cell" rowspan="${span}">${escapeHtml(g.name)}</td>
+            <td class="group-cell number" rowspan="${span}">${fmtNum(g.sales)}</td>
+          `;
+        }
+
+        html += `
+            <td>${escapeHtml(o.origin)}</td>
+            <td class="number">${fmtNum(o.sales)}</td>
+            <td class="number">${fmtMoney(o.revenue)}</td>
+          </tr>
+        `;
+      });
+    });
+
+    html += `</tbody></table>`;
+    html += originLimitNote(groups, allGroups);
+
+    container.innerHTML = html;
+    return;
+  }
+
+  /* ---------------- COMPARISON ---------------- */
+
+  const map = {};
+
+  function add(month, side) {
+    getCampaignOrigins(month).forEach(function(c) {
+
+      const key = campaignKeyOf(c);
+
+      if (!map[key]) {
+        map[key] = { id: c.id, name: c.name, origins: {} };
+      }
+
+      if (side === 'b') {
+        map[key].id = c.id || map[key].id;
+        map[key].name = c.name || map[key].name;
+      }
+
+      c.origins.forEach(function(o) {
+        if (!keep(o.origin)) return;
+        const t = map[key].origins[o.origin] ||
+          (map[key].origins[o.origin] = { origin: o.origin, aSales: 0, bSales: 0, aRev: 0, bRev: 0 });
+        t[side + 'Sales'] += o.sales;
+        t[side + 'Rev'] += o.revenue;
+      });
+    });
+  }
+
+  add(monthA, 'a');
+  add(monthB, 'b');
+
+  const allGroups = Object.keys(map)
+    .map(function(k) {
+      const g = map[k];
+      const origins = Object.keys(g.origins)
+        .map(function(o) { return g.origins[o]; })
+        .sort(function(x, y) { return (y.aSales + y.bSales) - (x.aSales + x.bSales); });
+      return {
+        id: g.id,
+        name: g.name,
+        origins: origins,
+        aSales: origins.reduce(function(s, o) { return s + o.aSales; }, 0),
+        bSales: origins.reduce(function(s, o) { return s + o.bSales; }, 0)
+      };
+    })
+    .filter(function(g) { return g.origins.length; })
+    .sort(function(x, y) { return (y.aSales + y.bSales) - (x.aSales + x.bSales); });
+
+  const groups = limitGroups(allGroups, getLimit('originLimit'));
+
+  if (!groups.length) {
+    container.innerHTML =
+      '<div class="empty">No sales in these months' +
+      (filter === 'ALL' ? '' : ' from ' + escapeHtml(filter)) + '.</div>';
+    return;
+  }
+
+  const la = escapeHtml(monthLabel(monthA));
+  const lb = escapeHtml(monthLabel(monthB)) + ' (Compared)';
+
+  function deltaCell(b, a, money) {
+    const pct = changePercent(b, a);
+    const cls = signClass(pct === null ? (b - a) : pct);
+    const text = pct === null ? (b > a ? 'New' : '—') : fmtSignedPercent(pct);
+    return `<td class="number ${cls}"><strong>${text}</strong></td>`;
+  }
+
+  let html = `
+    <table class="origin-table compare grouped">
+      <thead>
+        <tr>
+          <th rowspan="2">Campaign ID</th>
+          <th rowspan="2">Campaign</th>
+          <th colspan="2" class="group-title group-start">Campaign Sales</th>
+          <th rowspan="2" class="group-start">Buyer Origin</th>
+          <th colspan="3" class="group-title group-start">Sales</th>
+          <th colspan="3" class="group-title group-start">Revenue</th>
+        </tr>
+        <tr>
+          <th class="group-start">${la}</th>
+          <th>${lb}</th>
+          <th class="group-start">${la}</th>
+          <th>${lb}</th>
+          <th>Change</th>
+          <th class="group-start">${la}</th>
+          <th>${lb}</th>
+          <th>Change</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  groups.forEach(function(g) {
+
+    g.origins.forEach(function(o, i) {
+
+      html += `<tr class="${i === 0 ? 'group-first' : ''}">`;
+
+      if (i === 0) {
+        const span = g.origins.length;
+        html += `
+          <td class="group-cell" rowspan="${span}">${escapeHtml(g.id || '—')}</td>
+          <td class="group-cell" rowspan="${span}">${escapeHtml(g.name)}</td>
+          <td class="group-cell number group-start" rowspan="${span}">${fmtNum(g.aSales)}</td>
+          <td class="group-cell number" rowspan="${span}">${fmtNum(g.bSales)}</td>
+        `;
+      }
+
+      html += `
+          <td class="group-start">${escapeHtml(o.origin)}</td>
+          <td class="number group-start">${fmtNum(o.aSales)}</td>
+          <td class="number">${fmtNum(o.bSales)}</td>
+          ${deltaCell(o.bSales, o.aSales)}
+          <td class="number group-start">${fmtMoney(o.aRev)}</td>
+          <td class="number">${fmtMoney(o.bRev)}</td>
+          ${deltaCell(o.bRev, o.aRev)}
+        </tr>
+      `;
+    });
+  });
+
+  html += `</tbody></table>`;
+  html += originLimitNote(groups, allGroups);
+
+  container.innerHTML = html;
+}
+
+
+/* =========================================================
+ * GEO-WISE PERFORMANCE
+ *
+ * Clicks / Impr / Cost from the Geo wise tab (Matched locations
+ * report), Sales / Revenue from Buyer Origin in the Sales tab.
+ * CTR = Clicks ÷ Impr · ROAS = Revenue ÷ Cost × 100
+ * ========================================================= */
+
+let geoSort = { key: 'cost', direction: 'desc' };
+
+const GEO_TEXT_KEYS = ['country'];
+
+function getGeo(month) {
+  if (!DATA || !DATA.months || !DATA.months[month]) return [];
+  return DATA.months[month].geo || [];
+}
+
+function geoTotals(month) {
+  if (!DATA || !DATA.months || !DATA.months[month] || !DATA.months[month].geoTotals) {
+    return { clicks: 0, impr: 0, cost: 0, sales: 0, revenue: 0, ctr: null, roas: null };
+  }
+  return DATA.months[month].geoTotals;
+}
+
+function hasGeo(month) {
+  return !!(DATA && DATA.months[month] && DATA.months[month].hasGeoReport);
+}
+
+function roasHtml(v) {
+  if (v === null || v === undefined || !isFinite(Number(v))) return '—';
+  const cls = Number(v) >= 100 ? 'roas-good' : 'roas-bad';
+  return `<span class="${cls}">${fmtPercent(v)}</span>`;
+}
+
+function fmtCtr(v) {
+  if (v === null || v === undefined || !isFinite(Number(v))) return '—';
+  return Number(v).toFixed(2) + '%';
+}
+
+function geoSortBy(key) {
+  if (geoSort.key === key) {
+    geoSort.direction = geoSort.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    geoSort.key = key;
+    geoSort.direction = GEO_TEXT_KEYS.indexOf(key) !== -1 ? 'asc' : 'desc';
+  }
+  const m = currentMonths();
+  renderGeo(m[0], m[1]);
+}
+
+function geoHeader(label, key, numeric, extraClass) {
+  let arrow = '<span class="sort-arrow">↕</span>';
+  if (geoSort.key === key) {
+    arrow = `<span class="sort-arrow active">${geoSort.direction === 'asc' ? '↑' : '↓'}</span>`;
+  }
+  return `
+    <th class="${numeric ? 'number' : ''} ${extraClass || ''}">
+      <button class="sort-button" onclick="geoSortBy('${key}')">
+        <span>${escapeHtml(label)}</span>${arrow}
+      </button>
+    </th>`;
+}
+
+function sortGeoRows(rows) {
+  const k = geoSort.key;
+  const text = GEO_TEXT_KEYS.indexOf(k) !== -1;
+  return rows.slice().sort(function(a, b) {
+    let x = a[k], y = b[k], r;
+    if (text) {
+      r = String(x || '').toLowerCase().localeCompare(String(y || '').toLowerCase());
+    } else {
+      x = (x === null || x === undefined || !isFinite(Number(x))) ? -Infinity : Number(x);
+      y = (y === null || y === undefined || !isFinite(Number(y))) ? -Infinity : Number(y);
+      r = x === y ? 0 : (x < y ? -1 : 1);
+    }
+    return geoSort.direction === 'asc' ? r : -r;
+  });
+}
+
+function geoSearchFilter(rows) {
+  const q = (document.getElementById('geoSearch').value || '').trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter(function(r) { return String(r.country).toLowerCase().includes(q); });
+}
+
+function renderGeoNote(monthA, monthB) {
+
+  const el = document.getElementById('geoNote');
+  let msg = '';
+
+  if (DATA && DATA.geoSheetFound === false) {
+    msg = `<strong>No "${escapeHtml(DATA.geoSheet)}" tab found.</strong> Create it and paste the Google Ads ` +
+          `"Matched locations report" (title row, date-range row, then headers) to see clicks, CTR, cost and ROAS by country.`;
+  } else {
+    const missing = [monthA, monthB].filter(function(m) { return m && !hasGeo(m); }).map(monthLabel);
+    if (missing.length) {
+      msg = `<strong>No Matched locations report for ${escapeHtml(missing.join(' and '))}.</strong> ` +
+            `Sales and revenue by Buyer Origin are shown, but clicks, impressions, cost and ROAS are 0 for that month.`;
+    }
+  }
+
+  el.classList.toggle('hidden', !msg);
+  el.innerHTML = msg;
+}
+
+function renderGeoKpis(monthA, monthB) {
+
+  const el = document.getElementById('geoKpis');
+  const a = geoTotals(monthA);
+  const b = monthB ? geoTotals(monthB) : null;
+
+  const items = [
+    { t: 'Clicks', k: 'clicks', f: fmtNum },
+    { t: 'Impressions', k: 'impr', f: fmtNum },
+    { t: 'CTR', k: 'ctr', f: fmtCtr, pts: true },
+    { t: 'Cost', k: 'cost', f: fmtMoney, lowerIsBetter: true },
+    { t: 'Sales', k: 'sales', f: fmtNum },
+    { t: 'Revenue', k: 'revenue', f: fmtMoney },
+    { t: 'ROAS', k: 'roas', f: roasHtml, pts: true }
+  ];
+
+  el.innerHTML = items.map(function(it) {
+
+    if (!b) {
+      return `<div class="geo-kpi"><div class="t">${it.t}</div><div class="v">${it.f(a[it.k])}</div></div>`;
+    }
+
+    let delta = null, text = '—';
+
+    if (it.pts) {
+      if (a[it.k] !== null && b[it.k] !== null && isFinite(a[it.k]) && isFinite(b[it.k])) {
+        delta = b[it.k] - a[it.k];
+        text = fmtSignedPts(delta);
+      }
+    } else {
+      delta = changePercent(b[it.k], a[it.k]);
+      text = delta === null ? 'N/A' : fmtSignedPercent(delta);
+    }
+
+    let cls = 'neutral';
+    if (delta !== null && delta !== 0) {
+      cls = (it.lowerIsBetter ? delta < 0 : delta > 0) ? 'positive' : 'negative';
+    }
+
+    return `
+      <div class="geo-kpi">
+        <div class="t">${it.t}</div>
+        <div class="v">${it.f(b[it.k])}</div>
+        <div class="c ${cls}">${text} vs ${escapeHtml(monthLabel(monthA))}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderGeo(monthA, monthB) {
+
+  const container = document.getElementById('geoTable');
+  const comparing = !!monthB;
+
+  document.getElementById('geoCompare').checked = comparing;
+
+  renderGeoNote(monthA, monthB);
+  renderGeoKpis(monthA, monthB);
+
+  /* ---------------- SINGLE MONTH ---------------- */
+
+  if (!comparing) {
+
+    if (geoSort.key.indexOf('_') !== -1) geoSort = { key: 'cost', direction: 'desc' };
+
+    const all = sortGeoRows(geoSearchFilter(getGeo(monthA)));
+
+    if (!all.length) {
+      container.innerHTML = '<div class="empty">No geo data for this month.</div>';
+      return;
+    }
+
+    const rows = all.slice(0, getLimit('geoLimit'));
+
+    let html = `
+      <table class="geo-table">
+        <thead>
+          <tr>
+            ${geoHeader('Country', 'country', false)}
+            ${geoHeader('Clicks', 'clicks', true)}
+            ${geoHeader('Impr.', 'impr', true)}
+            ${geoHeader('CTR', 'ctr', true)}
+            ${geoHeader('Cost', 'cost', true)}
+            ${geoHeader('CPC', 'cpc', true)}
+            ${geoHeader('Sales', 'sales', true)}
+            ${geoHeader('Revenue', 'revenue', true)}
+            ${geoHeader('Conv. rate', 'cr', true)}
+            ${geoHeader('ROAS', 'roas', true)}
+          </tr>
+        </thead>
+        <tbody>`;
+
+    rows.forEach(function(g) {
+      html += `
+        <tr>
+          <td>${escapeHtml(g.country)}</td>
+          <td class="number">${fmtNum(g.clicks)}</td>
+          <td class="number">${fmtNum(g.impr)}</td>
+          <td class="number">${fmtCtr(g.ctr)}</td>
+          <td class="number">${fmtMoney(g.cost)}</td>
+          <td class="number">${g.cpc === null ? '—' : fmtMoney(g.cpc)}</td>
+          <td class="number">${fmtNum(g.sales)}</td>
+          <td class="number">${fmtMoney(g.revenue)}</td>
+          <td class="number">${fmtCtr(g.cr)}</td>
+          <td class="number">${roasHtml(g.roas)}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    html += limitNote(rows.length, all.length, 'countries');
+
+    container.innerHTML = html;
+    return;
+  }
+
+  /* ---------------- COMPARISON ---------------- */
+
+  const map = {};
+
+  getGeo(monthA).forEach(function(g) { (map[g.key] = map[g.key] || { country: g.country }).a = g; });
+  getGeo(monthB).forEach(function(g) {
+    map[g.key] = map[g.key] || { country: g.country };
+    map[g.key].b = g;
+    map[g.key].country = g.country || map[g.key].country;
+  });
+
+  const metrics = [
+    { label: 'Clicks', k: 'clicks', f: fmtNum },
+    { label: 'Impr.', k: 'impr', f: fmtNum },
+    { label: 'CTR', k: 'ctr', f: fmtCtr, pts: true },
+    { label: 'Cost', k: 'cost', f: fmtMoney, lowerIsBetter: true },
+    { label: 'Sales', k: 'sales', f: fmtNum },
+    { label: 'Revenue', k: 'revenue', f: fmtMoney },
+    { label: 'ROAS', k: 'roas', f: roasHtml, pts: true }
+  ];
+
+  let list = Object.keys(map).map(function(key) {
+
+    const e = map[key];
+    const a = e.a || {};
+    const b = e.b || {};
+    const r = { country: e.country };
+
+    metrics.forEach(function(m) {
+      const va = a[m.k] === undefined ? (m.pts ? null : 0) : a[m.k];
+      const vb = b[m.k] === undefined ? (m.pts ? null : 0) : b[m.k];
+      r['a_' + m.k] = va;
+      r['b_' + m.k] = vb;
+      r['d_' + m.k] = m.pts
+        ? (va !== null && vb !== null && isFinite(va) && isFinite(vb) ? vb - va : null)
+        : changePercent(vb, va);
+    });
+
+    return r;
+  });
+
+  list = sortGeoRows(geoSearchFilter(list));
+
+  if (!list.length) {
+    container.innerHTML = '<div class="empty">No geo data for these months.</div>';
+    return;
+  }
+
+  const la = monthLabel(monthA);
+  const lb = monthLabel(monthB) + ' (Compared)';
+
+  /* Default comparison sort: compared-month cost. */
+  if (['country'].indexOf(geoSort.key) === -1 && geoSort.key.indexOf('_') === -1) {
+    geoSort = { key: 'b_cost', direction: 'desc' };
+    list = sortGeoRows(list);
+  }
+
+  let head1 = geoHeader('Country', 'country', false).replace('<th ', '<th rowspan="2" ');
+  let head2 = '';
+
+  metrics.forEach(function(m) {
+    head1 += `<th colspan="3" class="group-title group-start">${m.label}</th>`;
+    head2 +=
+      geoHeader(la, 'a_' + m.k, true, 'group-start') +
+      geoHeader(lb, 'b_' + m.k, true, '') +
+      geoHeader('Change', 'd_' + m.k, true, '');
+  });
+
+  const rows = list.slice(0, getLimit('geoLimit'));
+
+  let html = `
+    <table class="geo-table compare grouped">
+      <thead><tr>${head1}</tr><tr>${head2}</tr></thead>
+      <tbody>`;
+
+  rows.forEach(function(r) {
+
+    html += `<tr><td>${escapeHtml(r.country)}</td>`;
+
+    metrics.forEach(function(m) {
+
+      const d = r['d_' + m.k];
+      let cls = 'neutral';
+
+      if (d !== null && d !== undefined && d !== 0) {
+        cls = (m.lowerIsBetter ? d < 0 : d > 0) ? 'positive' : 'negative';
+      }
+
+      const dText = m.pts
+        ? fmtSignedPts(d)
+        : (d === null ? (r['b_' + m.k] > 0 ? 'New' : '—') : fmtSignedPercent(d));
+
+      html += `
+        <td class="number group-start">${m.f(r['a_' + m.k])}</td>
+        <td class="number">${m.f(r['b_' + m.k])}</td>
+        <td class="number ${cls}"><strong>${dText}</strong></td>`;
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  html += limitNote(rows.length, list.length, 'countries');
+
+  container.innerHTML = html;
+}
+
+
+/* =========================================================
+ * MISSING CAMPAIGN REPORT WARNING
+ * ========================================================= */
+
+function hasReport(month) {
+  return !!(DATA && DATA.months[month] && DATA.months[month].hasCampaignReport);
+}
+
+/*
+ * Explains why campaign rows show 0 sales: sales in the month
+ * that have no Utm_Campaign value.
+ */
+function renderCampaignNote(monthA, monthB) {
+
+  const el = document.getElementById('campaignNote');
+
+  const parts = [monthA, monthB]
+    .filter(Boolean)
+    .map(function(m) {
+      const t = monthTotals(m);
+      const un = Number(t.unattributedSales || 0);
+      const all = Number(t.sales || 0);
+      if (!un) return '';
+      return `<strong>${escapeHtml(monthLabel(m))}:</strong> ${fmtNum(un)} of ${fmtNum(all)} sales ` +
+        `(${fmtMoney(t.unattributedRevenue)}) have no Utm_Campaign in the Sales tab, so they are not counted on any campaign row` +
+        (un === all ? ' — that is why every campaign shows 0 sales and 0.0% ROS.' : '.');
+    })
+    .filter(Boolean);
+
+  if (!parts.length) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+
+  el.classList.remove('hidden');
+  el.innerHTML = parts.join('<br>') +
+    '<br>They still count in the Sales / Revenue totals at the top and appear as "(No campaign)" in the Buyer Origin table.';
+}
+
+function renderReportWarning(monthA, monthB) {
+
+  const el = document.getElementById('reportWarning');
+
+  const missing = [monthA, monthB]
+    .filter(function(m) { return m && !hasReport(m); })
+    .map(monthLabel);
+
+  if (!missing.length) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+
+  el.classList.remove('hidden');
+  el.innerHTML =
+    '<strong>No campaign report for ' + escapeHtml(missing.join(' and ')) + '.</strong> ' +
+    'Sales and revenue are shown, but Impressions, Cost and ROS are 0 and every campaign shows ' +
+    '"Not in report". Paste that month\'s Google Ads export into the Campaigns tab ' +
+    '("Campaign report" row, then the date-range row, then headers) and reload.';
+}
+
+
+/* =========================================================
+ * CURRENCY NOTE
+ * ========================================================= */
+
+function renderFxNote() {
+
+  const fx = DATA && DATA.fx;
+  const el = document.getElementById('fxNote');
+
+  if (!fx || fx.mode === 'NONE') {
+    el.textContent = '';
+    return;
+  }
+
+  let how;
+
+  if (fx.mode === 'DAILY') {
+    how = 'at the daily ECB rate for each sale date';
+    if (fx.fixed || fx.monthly) {
+      how += ` (${fmtNum(fx.fixed + fx.monthly)} sales used the fallback rate)`;
+    }
+  } else if (fx.mode === 'MONTHLY') {
+    how = 'at monthly rates';
+  } else {
+    how = `at a fixed rate of 1 ${fx.from} = ${Number(fx.fixedRate).toFixed(4)} ${fx.to}`;
+  }
+
+  el.textContent = ` · Revenue converted from ${fx.from} to ${fx.to} ${how}.`;
+}
+
+
+/* =========================================================
+ * MAIN RENDER
+ * ========================================================= */
+
+function render() {
+
+  const monthA = document.getElementById('monthA').value;
+  const comparing = document.getElementById('compareToggle').checked;
+  const monthB = comparing ? document.getElementById('monthB').value : null;
+
+  document.getElementById('monthBWrapper').classList.toggle('hidden', !comparing);
+  document.getElementById('singleMonthCharts').classList.toggle('hidden', comparing);
+  document.getElementById('compareCharts').classList.toggle('hidden', !comparing);
+
+  renderReportWarning(monthA, monthB);
+
+  renderKpis(monthA, monthB);
+
+  if (comparing) {
+    drawBuyerOriginComparison(monthA, monthB);
+    drawPlansComparison(monthA, monthB);
+  } else {
+    drawBuyerOrigin(monthA);
+    drawTopPlans(monthA);
+  }
+
+  renderGeo(monthA, monthB);
+
+  renderCampaignNote(monthA, monthB);
+  renderCampaignTable(monthA, monthB);
+
+  populateOriginFilter(monthA, monthB);
+  renderCampaignOrigin(monthA, monthB);
+}
+
+
+/* =========================================================
+ * MONTH DROPDOWNS
+ * ========================================================= */
+
+function populateMonths() {
+
+  const monthA = document.getElementById('monthA');
+  const monthB = document.getElementById('monthB');
+
+  monthA.innerHTML = '';
+  monthB.innerHTML = '';
+
+  DATA.monthList.forEach(function(month) {
+
+    const optionA = document.createElement('option');
+    optionA.value = month;
+    optionA.textContent = monthLabel(month);
+    monthA.appendChild(optionA);
+
+    const optionB = document.createElement('option');
+    optionB.value = month;
+    optionB.textContent = monthLabel(month);
+    monthB.appendChild(optionB);
+  });
+
+  /*
+   * Default: latest month that has a campaign report
+   * (falls back to the latest month overall).
+   */
+  if (DATA.monthList.length) {
+
+    const withReport = DATA.monthList.filter(hasReport);
+    const list = withReport.length ? withReport : DATA.monthList;
+
+    monthA.value = list[list.length - 1];
+
+    monthB.value = list.length > 1
+      ? list[list.length - 2]
+      : list[0];
+  }
+}
+
+
+/* =========================================================
+ * SITE DROPDOWN
+ * ========================================================= */
+
+function populateSiteSelect(currentSiteKey, sites) {
+
+  const sel = document.getElementById('siteSelect');
+
+  if (!sel.dataset.populated) {
+
+    sel.innerHTML = (sites || []).map(function(s) {
+      return `<option value="${escapeHtml(s.key)}">${escapeHtml(s.label)}</option>`;
+    }).join('');
+
+    sel.dataset.populated = '1';
+
+    sel.addEventListener('change', function() {
+      loadDashboard(sel.value);
+    });
+  }
+
+  sel.value = currentSiteKey;
+
+  const active = (sites || []).find(function(s) { return s.key === currentSiteKey; });
+  document.getElementById('siteLabel').textContent = active ? ('– ' + active.label) : '';
+}
+
+
+/* =========================================================
+ * EVENTS
+ * ========================================================= */
+
+document.getElementById('monthA').addEventListener('change', render);
+document.getElementById('monthB').addEventListener('change', render);
+document.getElementById('compareToggle').addEventListener('change', render);
+
+function currentMonths() {
+  const comparing = document.getElementById('compareToggle').checked;
+  return [
+    document.getElementById('monthA').value,
+    comparing ? document.getElementById('monthB').value : null
+  ];
+}
+
+/*
+ * Geo-wise comparison checkbox = the same switch as "Compare months"
+ * at the top (both stay in sync).
+ */
+document.getElementById('geoCompare').addEventListener('change', function() {
+  document.getElementById('compareToggle').checked = this.checked;
+  if (!this.checked) geoSort = { key: 'cost', direction: 'desc' };
+  render();
+});
+
+document.getElementById('compareToggle').addEventListener('change', function() {
+  if (!this.checked) geoSort = { key: 'cost', direction: 'desc' };
+});
+
+document.getElementById('geoLimit').addEventListener('change', function() {
+  const m = currentMonths();
+  renderGeo(m[0], m[1]);
+});
+
+document.getElementById('geoSearch').addEventListener('input', function() {
+  const m = currentMonths();
+  renderGeo(m[0], m[1]);
+});
+
+document.getElementById('campaignLimit').addEventListener('change', function() {
+  const m = currentMonths();
+  renderCampaignTable(m[0], m[1]);
+});
+
+document.getElementById('originLimit').addEventListener('change', function() {
+  const m = currentMonths();
+  renderCampaignOrigin(m[0], m[1]);
+});
+
+document.getElementById('originFilter').addEventListener('change', function() {
+  const comparing = document.getElementById('compareToggle').checked;
+  renderCampaignOrigin(
+    document.getElementById('monthA').value,
+    comparing ? document.getElementById('monthB').value : null
+  );
+});
+
+
+/* =========================================================
+ * LOAD DATA
+ * ========================================================= */
+
+function loadDashboard(siteKey) {
+
+  google.script.run
+
+    .withSuccessHandler(function(data) {
+
+      DATA = data;
+
+      if (!DATA || !DATA.monthList || !DATA.monthList.length) {
+        document.querySelector('.container').innerHTML +=
+          '<div class="error">No month data found.</div>';
+        return;
+      }
+
+      populateSiteSelect(DATA.site, DATA.sites);
+
+      /*
+       * Reset sort/filters that are specific to the previous
+       * site's data so switching sites starts from a clean view.
+       */
+      campaignSort = { key: 'sales', direction: 'desc' };
+      document.getElementById('compareToggle').checked = false;
+      document.getElementById('campaignLimit').value = '10';
+      document.getElementById('originLimit').value = '10';
+      document.getElementById('geoLimit').value = '15';
+      document.getElementById('geoSearch').value = '';
+      geoSort = { key: 'cost', direction: 'desc' };
+
+      renderFxNote();
+      populateMonths();
+      render();
+    })
+
+    .withFailureHandler(function(error) {
+
+      const message = error && error.message ? error.message : String(error);
+
+      /*
+       * Account is not on the allowed list (or signed out).
+       */
+      if (/ACCESS_DENIED/.test(message)) {
+        document.querySelector('.container').innerHTML = `
+          <div class="error">
+            Access denied. This Google account is not allowed to view the dashboard.
+            Sign in with an approved account and reload the page.
+          </div>
+        `;
+        return;
+      }
+
+      document.querySelector('.container').innerHTML += `
+        <div class="error">
+          Failed to load dashboard data:
+          ${escapeHtml(message)}
+        </div>
+      `;
+    })
+
+    .getDashboardData(siteKey);
+}
+
+google.charts.setOnLoadCallback(function() {
+  loadDashboard(null);
+});
+
+</script>
+
+</body>
+</html>
